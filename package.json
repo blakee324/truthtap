@@ -1,0 +1,18 @@
+{
+  "name": "truthtap-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "generate-vapid": "node scripts/generate-vapid.js"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@upstash/redis": "^1.34.0",
+    "web-push": "^3.6.0"
+  }
+}
