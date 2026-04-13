@@ -209,6 +209,11 @@ const PERSPECTIVES = [
 ];
 
 function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function PinIcon({ filled, size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "var(--accent)" : "none"} stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 17v5" />
@@ -266,22 +271,25 @@ export default function Home() {
   const [demoMode, setDemoMode] = useState(false);
   const [pinned, setPinned] = useState([]);
   const [history, setHistory] = useState([]);
-  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(true);
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("tt_pinned");
-    if (stored) setPinned(JSON.parse(stored));
-    const hist = localStorage.getItem("tt_history");
-    if (hist) setHistory(JSON.parse(hist));
-    const daily = localStorage.getItem("tt_daily");
-    if (daily) {
-      const d = JSON.parse(daily);
-      if (d.date === getTodayKey()) setSeenToday(true);
-    }
-    const onboarded = localStorage.getItem("tt_onboarded");
-    setScreen(onboarded ? "home" : "splash");
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem("tt_pinned");
+      if (stored) setPinned(JSON.parse(stored));
+      const hist = localStorage.getItem("tt_history");
+      if (hist) setHistory(JSON.parse(hist));
+      const daily = localStorage.getItem("tt_daily");
+      if (daily) {
+        const d = JSON.parse(daily);
+        if (d.date === getTodayKey()) setSeenToday(true);
+      }
+      const onboarded = localStorage.getItem("tt_onboarded");
+      setScreen(onboarded ? "home" : "splash");
+    } catch(e) { setScreen("splash"); }
 
     // Register service worker
     if ("serviceWorker" in navigator) {
@@ -378,7 +386,7 @@ export default function Home() {
     return (
       <div style={{ minHeight:"100dvh", background:"var(--bg)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:40 }}>
         <div style={{ width:72, height:72, borderRadius:"50%", border:"2px solid var(--accent-border)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:40 }}>
-          <span style={{ fontFamily:"var(--font-display)", fontSize:28, color:"var(--accent)" }}>!</span>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
         </div>
         <h1 style={{ fontFamily:"var(--font-display)", fontSize:48, fontWeight:700, color:"var(--white)", marginBottom:16, letterSpacing:-1 }}>TruthTap</h1>
         <p style={{ fontFamily:"var(--font-body)", fontSize:14, color:"var(--text-tertiary)", letterSpacing:3, textTransform:"uppercase", marginBottom:60 }}>A daily reality check</p>
@@ -393,7 +401,7 @@ export default function Home() {
       <div style={{ padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:"1px solid var(--border)", position:"sticky", top:0, background:"var(--bg)", zIndex:10, paddingTop:"env(safe-area-inset-top, 16px)" }}>
         <div onClick={handleLogoTap} style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
           <div style={{ width:36, height:36, borderRadius:"50%", border:"1.5px solid var(--accent-border)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <span style={{ fontFamily:"var(--font-display)", fontSize:16, color:"var(--accent)" }}>!</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
           </div>
           <span style={{ fontFamily:"var(--font-display)", fontSize:18, fontWeight:700, color:"var(--white)" }}>TruthTap</span>
           {demoMode && <span style={{ fontSize:9, letterSpacing:1, color:"var(--bg)", background:"var(--accent)", padding:"2px 6px", borderRadius:4 }}>DEMO</span>}
@@ -446,13 +454,6 @@ export default function Home() {
               </div>
             ))}
           </>
-        )}
-
-        {/* Enable notifications */}
-        {!notifEnabled && (
-          <button onClick={subscribeToPush} style={{ width:"100%", padding:16, background:"none", border:"1px solid var(--accent-border)", borderRadius:16, cursor:"pointer", color:"var(--accent)", fontFamily:"var(--font-body)", fontSize:14, marginBottom:32 }}>
-            Enable daily notifications
-          </button>
         )}
 
         {/* History */}

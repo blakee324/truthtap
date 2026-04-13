@@ -1,20 +1,21 @@
 import "./globals.css";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0a0a0a",
+};
+
 export const metadata = {
   title: "TruthTap",
   description: "One fact. Once a day. Get over yourself.",
   manifest: "/manifest.json",
-  themeColor: "#0a0a0a",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "TruthTap",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   },
 };
 
