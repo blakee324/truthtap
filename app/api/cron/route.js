@@ -2,39 +2,202 @@ import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import webpush from "../../../lib/push.js";
 
-// All perspectives inline to avoid import issues in serverless
 const PERSPECTIVES = [
   { stat: "55,000", context: "people were diagnosed with cancer today.", question: "You're healthy and you spent today complaining about your boss." },
   { stat: "5,600", context: "people in the US were diagnosed with cancer today.", question: "One of them was in the car you honked at this morning." },
   { stat: "168,000", context: "people died today across the world.", question: "Every one of them had plans for tomorrow. You got yours. Use it." },
   { stat: "150,000", context: "families lost someone they love today.", question: "Everyone you love is still breathing. Act like it." },
-  { stat: "2,000", context: "people took their own life today.", question: "If you're struggling, say something. If you're not, ask someone." },
+  { stat: "2,000", context: "people took their own life today.", question: "You spent today complaining about your commute. They spent today trying to survive it." },
   { stat: "2.2 billion", context: "people worldwide have a vision impairment.", question: "You're reading this on a device that costs more than some of them earn in a year." },
-  { stat: "1 in 8", context: "people globally live with a mental health disorder.", question: "Someone near you is drowning and smiling. Ask them how they're really doing." },
+  { stat: "1 in 8", context: "people globally live with a mental health disorder.", question: "You walked past one of them today. You didn't notice. Nobody does." },
   { stat: "3.2 million", context: "people die every year from household air pollution.", question: "You complain about your house. Theirs is killing them." },
-  { stat: "1,700", context: "people in the US died from cancer today. One every 50 seconds.", question: "Someone's parent didn't come home tonight. Hug yours." },
+  { stat: "1,700", context: "people in the US died from cancer today. One every 50 seconds.", question: "You argued with yours over something you won't remember next week." },
   { stat: "295 million", context: "people faced acute hunger across 53 countries this year.", question: "You threw out leftovers this week." },
   { stat: "700 million", context: "people survive on less than $2.15 a day. Not per meal. Per day.", question: "You spent more than that on coffee this morning." },
   { stat: "45 million", context: "children under 5 suffer from wasting due to severe malnutrition.", question: "You skipped lunch because you 'weren't in the mood.'" },
+  { stat: "2", context: "famines were officially declared in the last year. In Sudan and Gaza.", question: "You said you were 'starving' before dinner." },
   { stat: "730 million", context: "people live without any access to electricity.", question: "You're mad about a loading screen." },
   { stat: "2.2 billion", context: "people lack access to safely managed drinking water.", question: "You left clean water running while you brushed your teeth." },
   { stat: "3.4 billion", context: "people don't have access to safely managed sanitation.", question: "You're on your phone in the bathroom right now and don't even think about it." },
   { stat: "273 million", context: "children and young people worldwide are out of school.", question: "You had every opportunity to learn and you scrolled your phone for 4 hours today." },
   { stat: "138 million", context: "children are engaged in child labour globally.", question: "They're in mines and fields. Your kid's biggest problem is homework." },
-  { stat: "54 million", context: "children are in hazardous work that could kill or permanently injure them.", question: "They're not old enough to drive, but they're old enough to die at work." },
+  { stat: "54 million", context: "children are in hazardous work that could kill or permanently injure them.", question: "Your kid complained about chores. These kids are losing fingers in factories." },
   { stat: "12 million", context: "girls under 18 are forced into marriage every year.", question: "You chose what to have for dinner tonight. That's a luxury they'll never have." },
   { stat: "50 million", context: "people are in modern slavery — forced labour or forced marriage.", question: "You're free and you're wasting it." },
   { stat: "122 million", context: "people have been forcibly displaced from their homes.", question: "You have a bed tonight. Millions would trade everything for that." },
-  { stat: "44,000+", context: "species are threatened with extinction on the IUCN Red List.", question: "Your problems are temporary. Extinction isn't." },
+  { stat: "43 million", context: "forcibly displaced people are children.", question: "Kids with no home, no school, no safety. Your kid complained about their bedroom." },
+  { stat: "3,200", context: "people were killed in road crashes today. One every 27 seconds.", question: "You checked your phone while driving this week." },
   { stat: "1 in 3", context: "women worldwide have experienced physical or sexual violence.", question: "She might be someone you know. She probably is." },
+  { stat: "10 million", context: "people contracted tuberculosis last year.", question: "You spent more than that on lunch. They died because they couldn't." },
+  { stat: "39 million", context: "people are living with HIV globally.", question: "You put off that doctor's appointment again, didn't you?" },
+  { stat: "1,000", context: "children under 5 die every day from unsafe water and sanitation.", question: "A kid died from dirty water in the time it took you to read this." },
+  { stat: "22 million", context: "people are in forced marriages globally.", question: "You swiped left 50 times today because nobody was good enough." },
+  { stat: "87 million", context: "children in Sub-Saharan Africa are in child labour.", question: "You complained about your workload today. 87 million children would trade their job for yours." },
   { stat: "5,600", context: "people found out they have cancer today in the US alone.", question: "You called one of them an idiot for driving too slow this morning." },
+  { stat: "1 in 8", context: "people live with a mental health disorder.", question: "You told one of them to 'just get over it' last week." },
   { stat: "2,000", context: "people died by suicide today.", question: "You don't know what that person you were rude to is going home to." },
   { stat: "150,000", context: "people died today.", question: "You ignored a call from someone who loves you because you couldn't be bothered." },
+  { stat: "1 in 3", context: "women have experienced physical or sexual violence in their lifetime.", question: "You laughed at a joke about one of them yesterday." },
   { stat: "55,000", context: "people were told they have cancer today.", question: "The cashier you snapped at might have been one of them." },
   { stat: "168,000", context: "people died today.", question: "You walked past someone without a second look. It might have been their last day." },
   { stat: "2,000", context: "people ended their own life today.", question: "That person you cut off in traffic might be barely holding on." },
   { stat: "1 in 8", context: "people are living with a mental health condition right now.", question: "Your coworker asked how you were. You said 'fine' and didn't ask back." },
+  { stat: "55,000", context: "families received a cancer diagnosis today.", question: "You left someone on read for 6 hours because you 'forgot.'" },
+  { stat: "150,000", context: "people took their last breath today.", question: "The stranger you gave a dirty look to on the train is someone's whole world." },
+  { stat: "39 million", context: "people are living with HIV.", question: "You judged someone today without knowing a single thing about their life." },
   { stat: "1,700", context: "Americans died from cancer today.", question: "The driver you swore at might be racing to say goodbye to one of them." },
+  { stat: "27,000", context: "people die from cancer every single day globally.", question: "You complained about a headache today." },
+  { stat: "49,000", context: "people died from heart disease today.", question: "You said you'd start exercising 'next Monday' for the third time." },
+  { stat: "537 million", context: "adults are living with diabetes worldwide.", question: "You complained about having to cook dinner tonight." },
+  { stat: "55 million", context: "people are living with dementia worldwide.", question: "You forgot to reply to a text. They're forgetting their own children's names." },
+  { stat: "1", context: "person develops dementia every 3 seconds.", question: "By the time you finish reading this, someone just lost a piece of who they are." },
+  { stat: "280 million", context: "people worldwide suffer from depression.", question: "Some of them smiled at you today and you had no idea." },
+  { stat: "301 million", context: "people live with an anxiety disorder.", question: "That person who cancelled plans on you might be fighting to leave their house." },
+  { stat: "800", context: "women die every day from preventable causes related to pregnancy and childbirth.", question: "You complained about a GP waiting room. 800 women died just trying to give birth today." },
+  { stat: "6,300", context: "newborns die every single day. Most from preventable causes.", question: "You moaned about broken sleep last night. A parent held their baby for the first and last time today." },
+  { stat: "13,400", context: "children under 5 died today.", question: "Most of them from diseases you got vaccinated for as a kid." },
+  { stat: "1,600", context: "people died from malaria today. Most of them were children under 5.", question: "They died from a mosquito bite. Your biggest problem today was a slow elevator." },
+  { stat: "137", context: "women are killed by a family member every single day.", question: "You locked your door tonight and felt safe. 137 women were killed by the person inside theirs." },
+  { stat: "43 million", context: "people worldwide are blind.", question: "They would give anything to see their family's face one more time. You looked at yours and reached for your phone." },
+  { stat: "783 million", context: "people went hungry in 2022.", question: "You scrolled past three food delivery apps trying to decide what you were 'in the mood for.'" },
+  { stat: "295 million", context: "people are facing acute food insecurity right now.", question: "You let fruit go bad in your fridge this week." },
+  { stat: "700 million", context: "people wouldn't be able to buy what's in your shopping basket.", question: "Your 'budget' is their fantasy." },
+  { stat: "106 million", context: "people drink water directly from untreated rivers and lakes.", question: "Your tap water is cleaner than what entire countries dream of." },
+  { stat: "730 million", context: "people have never charged a phone, turned on a light, or opened a fridge.", question: "You got frustrated because your battery dropped to 10%." },
+  { stat: "700 million", context: "people can't afford basic food, shelter, or medicine.", question: "You returned something online because it wasn't the right shade." },
+  { stat: "1.2 billion", context: "people live in acute multidimensional poverty.", question: "You have all three and still found something to moan about today." },
+  { stat: "273 million", context: "children have no access to education.", question: "Some of them walk hours just hoping to sit in a classroom. You complained about a meeting." },
+  { stat: "617 million", context: "children and adolescents worldwide cannot read a simple sentence or do basic maths.", question: "You have a library in your pocket. You used it to watch cat videos." },
+  { stat: "138 million", context: "children are working instead of going to school.", question: "Your biggest childhood problem was being bored on a rainy day." },
+  { stat: "54 million", context: "children do work classified as hazardous by the ILO.", question: "You called in sick because you were tired. A 10-year-old is breaking rocks in a quarry right now." },
+  { stat: "12 million", context: "girls are married off before their 18th birthday each year.", question: "You agonised over what to wear on a date. She didn't get a date. She got a contract." },
+  { stat: "650 million", context: "women alive today were married as children.", question: "Your freedom to choose who you love is not universal. It's a privilege." },
+  { stat: "28 million", context: "people are in forced labour right now.", question: "Someone made the clothes you're wearing. They might not have had a choice." },
+  { stat: "3.3 million", context: "children are in forced labour.", question: "You counted down to the weekend. They don't get weekends. They don't get holidays. Ever." },
+  { stat: "122 million", context: "people didn't choose to leave their homes. War or disaster chose for them.", question: "You moved for a better view. They moved to stay alive." },
+  { stat: "43 million", context: "displaced children have no permanent home.", question: "Your child sleeps in the same bed every night. That's not normal for 43 million kids." },
+  { stat: "356 million", context: "children live in extreme poverty.", question: "They've never had a birthday cake. Your kid cried because theirs was the wrong colour." },
+  { stat: "168,000", context: "people's alarms didn't go off this morning. They died.", question: "Your alarm went off and you hit snooze. That's a privilege." },
+  { stat: "2,000", context: "families lost someone to suicide today.", question: "You had time to scroll for two hours but not enough to reply to one message." },
+  { stat: "55,000", context: "people heard 'you have cancer' today.", question: "You heard 'your order is ready.' Count your blessings." },
+  { stat: "168,000", context: "hearts stopped beating today.", question: "Yours didn't. And you spent it angry about parking." },
+  { stat: "2,000", context: "people gave up on life today.", question: "You were too busy with your own problems to notice theirs." },
+  { stat: "700 million", context: "people went to bed hungry tonight.", question: "You went to bed stressed about tomorrow. They went to bed not knowing if they'll eat." },
+  { stat: "43 million", context: "children fell asleep tonight without a home.", question: "Your pillow isn't comfortable enough? Noted." },
+  { stat: "50 million", context: "people woke up today with no freedom.", question: "You woke up and chose to complain. At least you got to choose." },
+  { stat: "150,000", context: "people said their last words today.", question: "What were your last words to someone you love? Were they kind?" },
+  { stat: "2,000", context: "people died by suicide today.", question: "You were in a room full of people today and didn't speak to a single one of them." },
+  { stat: "55 million", context: "people with dementia are losing their memories.", question: "You haven't visited in months because you've been 'too busy.' Busy doing what?" },
+  { stat: "150,000", context: "people died today. Some of them alone.", question: "You know someone who's lonely. You know exactly who. And you still didn't reach out." },
+  { stat: "137", context: "women were killed by someone they trusted today.", question: "'I love you' doesn't always mean safety. For some, it means danger." },
+  { stat: "10 million", context: "people get tuberculosis every year. It kills 1.3 million of them.", question: "You took a paracetamol for a headache today without thinking. They can't afford the pill that saves their life." },
+  { stat: "1,600", context: "children died from malaria today.", question: "You spent $5 on a snack today. A $2 net could have saved a child's life." },
+  { stat: "800", context: "women died in childbirth today.", question: "Giving birth killed them. You complained about a doctor's waiting room." },
+  { stat: "2", context: "people die every second.", question: "Two people died while you read this sentence. You're still here." },
+  { stat: "7,000", context: "people died in the last hour.", question: "You spent that hour on social media." },
+  { stat: "105", context: "people die every minute.", question: "In the time it takes you to complain about your day, a life ends somewhere." },
+  { stat: "55,000", context: "people were told their life might be cut short today.", question: "You have time. They might not. Stop wasting yours." },
+  { stat: "168,000", context: "people ran out of time today.", question: "You said 'there's always tomorrow.' There isn't. Not for everyone." },
+  { stat: "295 million", context: "people don't have enough to eat.", question: "You complained about your meal being wrong at a restaurant." },
+  { stat: "2.2 billion", context: "people risk their health every time they take a drink of water.", question: "You poured a glass of water today without a single thought. That's a luxury." },
+  { stat: "700 million", context: "people live in extreme poverty.", question: "Your 'bad day' costs more than their entire week." },
+  { stat: "50 million", context: "people have no freedom. No choice. No autonomy.", question: "You spent 20 minutes deciding which show to watch. That's freedom. Own it." },
+  { stat: "273 million", context: "children are denied an education.", question: "You have access to every book ever written on a device in your pocket. What did you learn today?" },
+  { stat: "1 in 4", context: "people globally will be affected by a mental health condition at some point.", question: "That includes you. And you probably don't even know it yet." },
+  { stat: "2,000", context: "parents buried their child today.", question: "You yelled at yours for spilling something." },
+  { stat: "55,000", context: "people found out they have cancer today.", question: "You were rude to a stranger this morning. They might be processing the worst news of their life." },
+  { stat: "5,600", context: "people in the US got a cancer diagnosis today.", question: "The person who accidentally bumped you might be walking out of an oncology ward." },
+  { stat: "27,000", context: "people died from cancer today.", question: "Someone sat in the car next to you at the lights today, knowing they won't see next Christmas." },
+  { stat: "280 million", context: "people live with depression.", question: "You called someone lazy this week. They might be fighting just to get out of bed." },
+  { stat: "2,000", context: "people died by suicide today.", question: "The colleague you rolled your eyes at might be planning their goodbye." },
+  { stat: "2,000", context: "people took their own life today.", question: "You told someone their problems aren't that bad this week. You were wrong." },
+  { stat: "168,000", context: "people died today.", question: "You honked at someone in traffic. It might have been a father racing to the hospital." },
+  { stat: "150,000", context: "families are grieving right now.", question: "You complained about your family at dinner tonight. At least they were there." },
+  { stat: "3,200", context: "people died in road accidents today.", question: "You texted while driving this week. You could have been the reason someone didn't come home." },
+  { stat: "55,000", context: "people were told they have cancer today.", question: "That waiter you didn't tip might be paying for chemotherapy." },
+  { stat: "1 in 3", context: "women have experienced violence.", question: "She's sitting next to you on the bus. She's in your office. She's your friend. And she never told you." },
+  { stat: "150,000", context: "people died today.", question: "You ghosted someone. They might have needed you more than you'll ever know." },
+  { stat: "168,000", context: "people didn't get tomorrow.", question: "You said 'I'll do it later.' 168,000 people found out today that later doesn't always come." },
+  { stat: "700 million", context: "people live on less than $2.15 a day.", question: "You spent $6 on a coffee you didn't finish." },
+  { stat: "2.2 billion", context: "people lack safe drinking water.", question: "You complained about the temperature of your shower this morning." },
+  { stat: "273 million", context: "children can't go to school.", question: "You called in sick to work because you 'didn't feel like going.'" },
+  { stat: "138 million", context: "children are in child labour.", question: "You complained that your job is boring. They'd give anything to swap." },
+  { stat: "122 million", context: "people have been forced from their homes.", question: "You complained about having to move house. They didn't get to pack." },
+  { stat: "2.2 billion", context: "people can't trust their water supply.", question: "You filled a bath, lay in it for an hour, drained it, and didn't think once about where it came from." },
+  { stat: "700 million", context: "people have nothing.", question: "You have everything and you're still not happy. Think about that." },
+  { stat: "150,000", context: "people's stories ended today.", question: "Yours is still being written. So far it's mostly complaints and screen time." },
+  { stat: "1 in 3", context: "women have been hurt by someone they knew.", question: "You probably know who. And you probably looked the other way." },
+  { stat: "138 million", context: "children work instead of play.", question: "Your childhood was a gift. Not everyone got one." },
+  { stat: "168,000", context: "people died today.", question: "You assume you'll wake up tomorrow. 168,000 people made that same assumption this morning." },
+  { stat: "55,000", context: "people's lives changed forever today with a diagnosis.", question: "Yours didn't. What are you going to do with that?" },
+  { stat: "2,000", context: "people decided they couldn't keep going.", question: "You told someone to 'stay positive' instead of actually listening to them." },
+  { stat: "150,000", context: "people took their last breath today.", question: "You still have yours. You used it to argue with strangers online." },
+  { stat: "3.4 billion", context: "people don't have a safe toilet.", question: "Half the planet doesn't have what you sit on while scrolling your phone." },
+  { stat: "13,400", context: "children died today from causes that were entirely preventable.", question: "You walked past a charity collector today. 13,400 children didn't make it home." },
+  { stat: "55 million", context: "people are forgetting who they are.", question: "Your memories are your life. Imagine losing them one by one." },
+  { stat: "1,700", context: "Americans lost their fight with cancer today.", question: "You've been putting off that health check for months. Some of them did the same. They're dead now." },
+  { stat: "49,000", context: "people died from heart disease today.", question: "You said you'd start taking care of yourself 'soon.' 49,000 people ran out of 'soon' today." },
+  { stat: "62 million", context: "people die every year.", question: "You spent today worrying about things that won't matter next week. 62 million people ran out of weeks this year." },
+  { stat: "1.19 million", context: "people die in road crashes every year.", question: "You drove 10 over the limit today. 1.19 million people a year die on roads just like yours." },
+  { stat: "122 million", context: "displaced people could fill every football stadium on Earth.", question: "You complained about your house being too small. 122 million people don't have one." },
+  { stat: "273 million", context: "children out of school is more than the population of Indonesia.", question: "You sat through a boring meeting today. 273 million kids would give anything to sit in any room with a teacher." },
+  { stat: "700 million", context: "people in extreme poverty is double the population of the United States.", question: "You said 'there's nothing to eat' in front of a full fridge. 700 million people meant it." },
+  { stat: "50 million", context: "people in modern slavery is more than the population of Spain.", question: "You complained about your boss. 50 million people can't quit. Can't leave. Can't say no." },
+  { stat: "55 million", context: "people with dementia is more than the population of South Korea.", question: "You forgot where you put your keys and got annoyed. 55 million people are forgetting who they are." },
+  { stat: "2.6 billion", context: "people have never used the internet.", question: "You complained about a bad WiFi connection today. A third of humanity has never been online." },
+  { stat: "1 in 2", context: "children globally — about 1 billion — face at least one severe deprivation.", question: "You have food, water, a toilet, a roof, an education, and a doctor. A billion children don't have all six." },
+  { stat: "168,000", context: "people didn't make it home today.", question: "You have no idea how lucky you are to be bored right now." },
+  { stat: "295 million", context: "people are facing acute hunger.", question: "You opened your fridge, saw a full fridge, and said 'there's nothing to eat.'" },
+  { stat: "730 million", context: "people have never watched TV, charged a phone, or turned on a light.", question: "You got frustrated because your battery dropped to 10%." },
+  { stat: "43 million", context: "children are refugees.", question: "Your kid got upset about not getting the toy they wanted. These kids don't have a home." },
+  { stat: "12 million", context: "girls were forced into marriage this year.", question: "They didn't get to choose. You chose your outfit for 20 minutes this morning." },
+  { stat: "50 million", context: "people can't leave their situation. They're trapped.", question: "You can walk out your front door right now. That's not normal for everyone." },
+  { stat: "55,000", context: "people found out today that their body is fighting against them.", question: "Your body works. Your legs walk. Your lungs breathe. And you still found something to complain about." },
+  { stat: "3,200", context: "people died on the road today.", question: "You road-raged at someone today. 3,200 people got in a car this morning and never came back." },
+  { stat: "800", context: "women died giving birth today.", question: "You stressed about a baby shower guest list. 800 women died just trying to deliver today." },
+  { stat: "1 in 8", context: "people are battling a mental health disorder.", question: "The friend you haven't checked on in months might be one of them." },
+  { stat: "55,000", context: "people were diagnosed with cancer today.", question: "Someone just got a phone call that changed their life forever. You got a notification about a sale." },
+  { stat: "150,000", context: "funerals are being planned right now.", question: "You can't hug someone who's gone. And you didn't hug them when they were here." },
+  { stat: "700 million", context: "people dream about what you call 'a bad day.'", question: "A roof, clean water, and three meals? That's the dream. You call it Tuesday." },
+  { stat: "273 million", context: "children are locked out of education.", question: "The knowledge you ignore is what they'd risk their life for." },
+  { stat: "50 million", context: "people are trapped in slavery.", question: "Your freedom isn't free. For 50 million people, it's not even possible." },
+  { stat: "2,000", context: "people lost their battle today.", question: "Someone needed to hear 'I'm here for you' and nobody said it." },
+  { stat: "168,000", context: "people are gone.", question: "You're not. And you spent today acting like you'd live forever." },
+  { stat: "13,400", context: "children took their last breath today.", question: "They never got to grow up. You did. What are you doing with it?" },
+  { stat: "6,300", context: "newborns died today.", question: "Their parents will never hear their first word. You ignored your kid's tenth story today." },
+  { stat: "280 million", context: "people woke up today wondering if they can make it through.", question: "You woke up annoyed at your alarm. They woke up fighting to find a reason." },
+  { stat: "301 million", context: "people live in constant fear without knowing why.", question: "You told someone with anxiety to 'just relax.' That's like telling someone drowning to 'just swim.'" },
+  { stat: "55 million", context: "people are losing their mind. Literally.", question: "They're trapped in a brain that's deleting everything they ever loved. Appreciate your memory." },
+  { stat: "122 million", context: "people are displaced.", question: "Imagine waking up and everything you own fits in a plastic bag. That's reality for 122 million people." },
+  { stat: "39 million", context: "people are living with HIV.", question: "You see a doctor whenever you want. 39 million people are living with a ticking clock." },
+  { stat: "10 million", context: "people got TB last year.", question: "You popped a pill for a sore throat today. They died from something a pill could fix." },
+  { stat: "137", context: "women were murdered by a partner or family member today.", question: "You argued with your partner over something petty. 137 women were killed by theirs today." },
+  { stat: "45 million", context: "children are wasting away from malnutrition.", question: "Their stomachs are empty and distended. Your kid left half their dinner untouched." },
+  { stat: "1.2 billion", context: "people are trapped in multidimensional poverty.", question: "You have healthcare, education, clean water, and electricity. 1.2 billion people have none of it." },
+  { stat: "617 million", context: "children can't read a single sentence.", question: "You read 200 text messages today without thinking twice about it." },
+  { stat: "650 million", context: "women alive today were married before they turned 18.", question: "You look back on your teenage years fondly. 650 million women never got to have them." },
+  { stat: "28 million", context: "people are working under force.", question: "You handed in your notice once because you didn't like the job. 28 million people can't hand in anything." },
+  { stat: "3.3 million", context: "of those forced labourers are children.", question: "Let that sit with you for a moment." },
+  { stat: "168,000", context: "people woke up for the last time today.", question: "Tomorrow isn't promised. It never was. Tell the people you love that you love them." },
+  { stat: "55,000", context: "people sat in a doctor's office today and heard the word 'cancer.'", question: "You sat in traffic today and thought your life was hard." },
+  { stat: "700 million", context: "people couldn't afford to eat today.", question: "You ordered food and tipped nothing. Their server was someone's lifeline." },
+  { stat: "2,000", context: "people reached the point of no return today.", question: "Someone you know is drowning and you're too distracted to notice the silence." },
+  { stat: "43 million", context: "children have no safe place to call home.", question: "You locked your front door tonight without thinking. That lock is a luxury." },
+  { stat: "55 million", context: "people are slowly becoming strangers to themselves.", question: "Dementia doesn't care about your status, wealth, or intelligence. Cherish every memory." },
+  { stat: "150,000", context: "lives ended today.", question: "Every one of them had a favourite song, a best friend, a fear, a hope. Just like you. Now they're gone." },
+  { stat: "273 million", context: "children would trade everything for one day in your shoes.", question: "You had opportunities today that 273 million kids can only dream about. Did you use them?" },
+  { stat: "50 million", context: "people are not free.", question: "You are. That sentence should change your entire day." },
+  { stat: "168,000", context: "people took their last breath today.", question: "Breathe in. You felt that? That's called being alive. Don't take it for granted." },
+  { stat: "2,000", context: "people's pain became too much today.", question: "You have no idea what the person sitting next to you is carrying. But you judged them anyway." },
+  { stat: "295 million", context: "people are fighting hunger right now.", question: "You have food in your fridge, money in your account, and a roof over your head. Your worst day is their best." },
+  { stat: "122 million", context: "people lost everything.", question: "Everything you're worried about right now — they'd take your problems in a heartbeat." },
+  { stat: "55,000", context: "people's worlds collapsed today.", question: "Yours held together. Remember that next time you think the universe is against you." },
+  { stat: "150,000", context: "people ran out of tomorrows.", question: "You didn't. Don't waste it." },
+  { stat: "168,000", context: "people are never coming back.", question: "You spent today doing nothing that mattered and tomorrow you'll do the same." },
+  { stat: "1,700", context: "Americans died from cancer today.", question: "You keep saying 'one day.' 1,700 people found out today that one day ran out." },
+  { stat: "2,000", context: "people's families will never understand why.", question: "Someone reached out to you recently. You left them on read." },
+  { stat: "356 million", context: "children are growing up in extreme poverty.", question: "They didn't choose to be born into it. You didn't choose to be born out of it. But you can choose what to do about it." },
+  { stat: "168,000", context: "people died today.", question: "And here you are, alive, reading this, and you'll probably forget about it in 30 seconds." }
 ];
 
 const redis = new Redis({
@@ -43,46 +206,30 @@ const redis = new Redis({
 });
 
 export async function GET(request) {
-  // Verify cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   try {
-    // Pick a random perspective
     const perspective = PERSPECTIVES[Math.floor(Math.random() * PERSPECTIVES.length)];
-
-    // Get all subscriptions
     const keys = await redis.keys("sub:*");
-    let sent = 0;
-    let failed = 0;
-
+    let sent = 0, failed = 0;
     for (const key of keys) {
       try {
         const sub = await redis.get(key);
         const subscription = typeof sub === "string" ? JSON.parse(sub) : sub;
-
-        await webpush.sendNotification(
-          subscription,
-          JSON.stringify({
-            title: perspective.stat,
-            body: perspective.context,
-          })
-        );
+        await webpush.sendNotification(subscription, JSON.stringify({
+          title: perspective.stat,
+          body: perspective.context + " " + perspective.question,
+        }));
         sent++;
       } catch (err) {
-        // Remove invalid subscriptions
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await redis.del(key);
-        }
+        if (err.statusCode === 404 || err.statusCode === 410) { await redis.del(key); }
         failed++;
       }
     }
-
     return NextResponse.json({ sent, failed, total: keys.length });
   } catch (error) {
-    console.error("Cron error:", error);
-    return NextResponse.json({ error: "Failed to send notifications" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
