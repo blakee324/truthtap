@@ -2,7 +2,6 @@ import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import webpush from "../../../lib/push.js";
 
-// All perspectives inline to avoid import issues in serverless
 const PERSPECTIVES = [
   { stat: "55,000", context: "people were diagnosed with cancer today.", question: "You're healthy and you spent today complaining about your boss." },
   { stat: "5,600", context: "people in the US were diagnosed with cancer today.", question: "One of them was in the car you honked at this morning." },
@@ -43,17 +42,14 @@ const redis = new Redis({
 });
 
 export async function GET(request) {
-  // Verify cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    // Pick a random perspective
     const perspective = PERSPECTIVES[Math.floor(Math.random() * PERSPECTIVES.length)];
 
-    // Get all subscriptions
     const keys = await redis.keys("sub:*");
     let sent = 0;
     let failed = 0;
@@ -67,12 +63,11 @@ export async function GET(request) {
           subscription,
           JSON.stringify({
             title: perspective.stat,
-            body: perspective.context,
+            body: perspective.context + " " + perspective.question,
           })
         );
         sent++;
       } catch (err) {
-        // Remove invalid subscriptions
         if (err.statusCode === 404 || err.statusCode === 410) {
           await redis.del(key);
         }
