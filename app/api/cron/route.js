@@ -53,7 +53,7 @@ export async function GET(request) {
       try {
         const sub = await redis.get(key);
         const subscription = typeof sub === "string" ? JSON.parse(sub) : sub;
-        await webpush.sendNotification(subscription, JSON.stringify({ title: perspective.stat, body: perspective.context + " " + perspective.question }));
+        await webpush.sendNotification(subscription, JSON.stringify({ title: "TruthTap", body: perspective.stat + " — " + perspective.context + " " + perspective.question }));
         sent++;
       } catch (err) { if (err.statusCode === 404 || err.statusCode === 410) await redis.del(key); failed++; }
     }
